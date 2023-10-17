@@ -1,0 +1,5 @@
+commodity/node_modules/*
+hybrid_networks/mesh/node_modules/*
+hybrid_networks/star/node_modules/*
+large-scale/node_modules/*
+large-scale/results/*

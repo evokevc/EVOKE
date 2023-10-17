@@ -1,0 +1,5 @@
+{
+  "dependencies": {
+    "@docknetwork/crypto-wasm-ts": "^0.34.0"
+  }
+}

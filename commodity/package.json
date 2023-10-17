@@ -1,0 +1,14 @@
+{
+  "devDependencies": {
+    "copy-webpack-plugin": "^11.0.0",
+    "webpack-cli": "^5.1.4"
+  },
+  "dependencies": {
+    "@docknetwork/crypto-wasm-ts": "^0.34.0",
+    "@iota/identity-wasm": "^0.6.0",
+    "babel-loader": "^9.1.2",
+    "buffer": "^6.0.3",
+    "path-browserify": "^1.0.1",
+    "stream-browserify": "^3.0.0"
+  }
+}
