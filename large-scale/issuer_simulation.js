@@ -19,8 +19,8 @@ async function main(){
             
             const network = new Network(numberOfDevices[d], 0);
             const issuer  = new Issuer(network.network);
-            const numberOfRevoc = (numberOfDevices[d] * numeberOfRevocations[r])/100;
-
+            const numberOfRevoc = Math.ceil(numberOfDevices[d] * numeberOfRevocations[r] / 100);
+            
             for(let execution = 0; execution < numberOfExecutions; execution++){
                 
                 const [executionTimeAccumulator, executionTimeWitnesses] = await issuer.generateAccumulator(network.network);

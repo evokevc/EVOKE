@@ -4,7 +4,7 @@ const Utils   = require('./utils')
 
 // Experiments settings
 const interactionPerHour        = 5;
-const interactionsPerDay        = 120 * interactionPerHour;
+const interactionsPerDay        = 24 * interactionPerHour;
 const numberOfDays              = 1
 const numberOfDevices           = [10000, 50000, 500000, 1000000]; 
 const devicesMissingUpdates     = [10, 30, 50]; // percentage
@@ -18,13 +18,13 @@ async function main(){
     for(let d = 0; d < numberOfDevices.length; d++){
             for(let m = 0; m < devicesMissingUpdates.length; m++){
                 let simulationResults = [];
-                const devicesMissing = (numberOfDevices[d] * devicesMissingUpdates[m])/100; 
+                const devicesMissing = Math.floor(numberOfDevices[d] * devicesMissingUpdates[m] / 100); 
                 const revocationPerDay = Math.ceil(numberOfDevices[d] * numberOfVCsToRevokePerDay / 100);
                 for(let execution = 0; execution < numberOfExecutions; execution++){
                     
                     const network = new Network(numberOfDevices[d], devicesMissing);
                     const [numberOfAccumlators, numberOfWitnesses, updatedDevices] = await network.simulateInteractions(interactionPerHour, interactionsPerDay, numberOfDays, revocationPerDay);
-                    console.log("\n=== Simulation Results ===\n\nAccumulator overhead: ", numberOfAccumlators * 800, "bytes");
+                    console.log("\n=== Simulation Results ===\n\nAccumulator overhead: ", numberOfAccumlators * sizeInBytesSignedVC, "bytes");
                     console.log("Witnesses overhead: ", numberOfWitnesses * sizeInBytesSignedVC, "bytes");
                     console.log("Interactions: ", network.getInteractions());
 

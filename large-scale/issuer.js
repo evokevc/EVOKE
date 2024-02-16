@@ -74,7 +74,7 @@ class Issuer {
         let tempElements = []
         
         while(index < number){
-            const randomIndex = Math.floor(Math.random() * this.elements.length);
+            let randomIndex = Math.floor(Math.random() * this.elements.length);
             
             if (network[randomIndex].vc == "v"){
                 network[randomIndex].vc = "r";
@@ -117,6 +117,8 @@ class Issuer {
             }
 
             if(network[i].isMissing == true){
+                network[i].accumulator = "o";
+                network[i].witness = "o";
                 outdated++;
             }
         }

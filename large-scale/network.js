@@ -1,6 +1,6 @@
 const Device = require('./device');
-const Issuer = require('./issuer'
-)
+const Issuer = require('./issuer')
+
 class Network {
     /**
    * Initialize a network.
@@ -19,19 +19,20 @@ class Network {
         this.nWit    = 0;
 
         // Initialize devices missing updates
-        for(let i = 0; i < missing; i++){
+        let i = 0;
+        for(; i < missing; i++){
             const randomType = types[Math.floor(Math.random() * types.length)];
-            const device = new Device(randomType, true, "u", "u", "v");
+            const device = new Device(i, randomType, true, "u", "u", "v");
             this.network.push(device);
         }    
         
         // Initialize other devices
-        for(let i = 0; i < devices - missing; i++){
-            const device = new Device("n", false, "u", "u", "v");
+        for(; i < devices; i++){
+            const device = new Device(i, "n", false, "u", "u", "v");
             this.network.push(device);
         }
         
-        this.shuffleNetwork()
+        this.network = this.shuffleNetwork(this.network)
         this.issuer = new Issuer(this.network)
     
     }
@@ -40,13 +41,22 @@ class Network {
    * Shuffle the devices in the network.
    * @returns - Shuffled network
    */
-    shuffleNetwork() {
-        for (let i = this.network.length - 1; i > 0; i--) {
-          const randomIndex = Math.floor(Math.random() * (i + 1));
-          [this.network[i], this.network[randomIndex]] = [this.network[randomIndex], this.network[i]];
-        }
-      }
+    shuffleNetwork(network) {
 
+        let currentIndex = network.length;
+        let randomIndex;
+     
+        while (currentIndex > 0) {
+            randomIndex = Math.floor(Math.random() * currentIndex);
+            currentIndex--;
+     
+            // Swap elements
+            [network[currentIndex], network[randomIndex]] = [network[randomIndex], network[currentIndex]];
+        }
+        
+        return network
+    }
+    
      /**
    * Simulate interactions among devices.
    * @param interactionsPerHour - number of interactions per hour per device
@@ -65,49 +75,70 @@ class Network {
             console.log("Is the whole network outdated?", this.isOutdated())
 
             // Update the network
-            this.issuer.sendUpdates(this.network);
-            for(let i = 0; i < interactionsPerDay; i = i + interactionsPerHour){
+            this.issuer.sendUpdates(this.network)
+
+            for(let i = 0; i < interactionsPerDay; i = i + interactionsPerHour) {
                 this.resetInteractionsDevices();
-                this.shuffleNetwork();
-
-                for(let j = 0; j < this.network.length; j++){
-
-                    // Simulate random interactions between devices
-                    this.shuffleNetwork();
                 
-                    while(this.network[j].interactionsHour < interactionsPerHour){
-                        
-                        let randomIndex = this.getValidRandomIndex(j, interactionsPerHour);
-                        this.network[j].interactionsHour++;
-                        this.network[j].interactions++;
-                        this.network[randomIndex].interactionsHour++;
-                        this.network[randomIndex].interactions++;
+                let count = 0;
+                while(true) {
                     
-                        // both diveces are updated
-                        let skipNextControl = 0
-                        if(this.network[j].accumulator == "u" && this.network[randomIndex].accumulator == "u"){
-                            skipNextControl = 1;
+                    let d1 = null;
+                    for (const device of this.network) {
+                        if (device.interactionsHour < interactionsPerHour) {
+                            d1 = device;
+                            break;                           
                         }
-                        
-                        // only one of the device is updated
-                        if(skipNextControl != 1 && (this.network[j].accumulator == "u" || this.network[randomIndex].accumulator == "u")){
-                            updatedDevices++;
-                            this.network[j].accumulator = "u";
-                            this.network[randomIndex].accumulator = "u"; 
-                            this.nAcc++;
+                    }
 
-                            // constrained devices can only update the accumulator
-                            if(this.network[j].type == "n" || this.network[randomIndex].accumulator == "n"){
-                                this.network[j].witness = "u";
-                                this.network[randomIndex].witness = "u";
-                                this.nWit++;
-                            }
+                    if (d1 === null) {
+                        break;
+                    }
+                   
+                    d1.n_selection++;
+                    
+                    let d2 = this.getOtherDevice(d1, interactionsPerHour);
+                    if (d2 === null) {
+                        break;
+                    }
+
+                    d2.n_selection++;
+
+                    d1.interactionsHour++;
+                    d1.interactions++;
+                    d2.interactionsHour++;
+                    d2.interactions++;
+
+                    // both diveces are updated
+                    let skipNextControl = 0
+                    if(d1.accumulator == "u" && d1.witness == "u" && 
+                       d2.accumulator == "u" && d2.witness == "u")
+                    {
+                        skipNextControl = 1;
+                    }
+                    
+                    // only one of the device is updated
+                    if(skipNextControl != 1 && ((d1.accumulator == "u") != (d2.accumulator == "u"))){
+                        d1.accumulator = "u";
+                        d2.accumulator = "u"; 
+                        this.nAcc++;
+
+                        // constrained devices can only update the accumulator
+                        if(d1.type == "n" || d2.type == "n"){
+                            updatedDevices++;
+                            d1.witness = "u";
+                            d2.witness = "u";
+                            this.nWit++;
                         }
-                    }             
+                    }    
+                    
+                    // Simulate random interactions between devices
+                    this.network = this.shuffleNetwork(this.network)
+                    count++;
                 }
             }
-
         }
+        
         console.log("\n=== Network ===\n\nAfter the interactions, ", updatedDevices, "IoT devices have been updated.")
         console.log("Is the whole network updated?", this.isUpdated())
         return [this.nAcc, this.nWit, updatedDevices];
@@ -120,7 +151,7 @@ class Network {
     isUpdated(){
         let i = 0;
         while(i < this.network.length){
-            if(this.network[i].accumulator == "o" && this.network[i].witness == "o"){
+            if(this.network[i].accumulator == "o" || this.network[i].witness == "o"){
                 return false;
             }
             i++;
@@ -136,7 +167,6 @@ class Network {
         let i = 0;
     
         while(i < this.network.length){
-            
             if(this.network[i].accumulator == "u" && this.network[i].witness == "u"){
                 return false;
             }
@@ -157,22 +187,19 @@ class Network {
     }
 
     /**
-   * Get a valid random index. 
+   * Get a valid device. 
    * @param index - different from the random index
    * @param interactionsPerHour - maximum number of interactions per hour
+   * @param network - IoT network
    * @returns - valid random index
    */
-    getValidRandomIndex(index, interactionsPerHour) {
-        let valid = false;
-
-        while(!valid){
-            for(let j = this.network.length - 1 ; j >= 0; j--){
-            if((j != index) && (this.network[j].interactionsHour != interactionsPerHour)){
-                    valid = true;
-                    return j;
-                } 
-            }
+    getOtherDevice(device, interactionsPerHour) {
+        for (let d of this.network) {
+            if (d != device && d.interactionsHour < interactionsPerHour) 
+                return d;
         }
+
+        return null;
     }
 
     /**
@@ -184,8 +211,9 @@ class Network {
         for(let i = 0; i < this.network.length; i++){
             interactions += this.network[i].interactions;
         }
-
-        return interactions;
+        
+        // each interactions involve two devices
+        return interactions / 2;
     }
 
     /**
